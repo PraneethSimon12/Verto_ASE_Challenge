@@ -1,0 +1,19 @@
+{
+  "products": [
+    {
+      "id": 3,
+      "name": "Pen",
+      "description": "Blue",
+      "stock_quantity": 12,
+      "low_stock_threshold": 20
+    },
+    {
+      "id": 4,
+      "name": "Notebook",
+      "description": "A5 ruled",
+      "stock_quantity": 2,
+      "low_stock_threshold": 5
+    }
+  ],
+  "nextId": 5
+}

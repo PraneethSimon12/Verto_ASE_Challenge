@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>IMS Demo</title>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<header>
+<h1>Inventory Management System</h1>
+<p class="muted">Simple demo UI using the API</p>
+</header>
+
+
+<section class="card">
+<h2>Add Product</h2>
+<form id="createForm">
+<input required name="name" placeholder="Name" />
+<input name="description" placeholder="Description" />
+<input name="stock_quantity" type="number" min="0" value="0" />
+<input name="low_stock_threshold" type="number" min="0" value="0" />
+<button>Add</button>
+</form>
+</section>
+
+
+<section class="card">
+<div class="row">
+<h2>Products</h2>
+<button id="refreshBtn">Refresh</button>
+<button id="viewLowBtn">View Low Stock</button>
+</div>
+<table id="productsTable">
+<thead>
+<tr>
+<th>ID</th><th>Name</th><th>Qty</th><th>Threshold</th><th>Actions</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</section>
+
+
+<script src="/app.js"></script>
+</body>
+</html>

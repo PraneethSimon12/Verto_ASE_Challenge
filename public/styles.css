@@ -1,0 +1,17 @@
+* { box-sizing: border-box; }
+body { font-family: system-ui, Arial, sans-serif; margin: 24px; color: #222; background: #fafafa; }
+header { margin-bottom: 16px; }
+h1 { margin: 0 0 6px; }
+.muted { color: #666; }
+.card { background: #fff; padding: 16px; border: 1px solid #eee; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+.row { display: flex; gap: 8px; align-items: center; }
+input, button { padding: 8px 10px; border-radius: 8px; border: 1px solid #ddd; }
+button { cursor: pointer; }
+button:hover { filter: brightness(0.98); }
+
+
+#productsTable { width: 100%; border-collapse: collapse; }
+#productsTable th, #productsTable td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+#productsTable .desc { color: #666; font-size: 12px; }
+.actions { display: flex; gap: 6px; align-items: center; }
+tr.low { background: #fff5f5; }
