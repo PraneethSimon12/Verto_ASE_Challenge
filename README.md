@@ -1,4 +1,4 @@
-ASE Challenge — Inventory Management System (Node + Mini UI) 🚀
+## ASE Challenge — Inventory Management System (Node + Mini UI) 🚀
 
 A review-friendly Inventory Management API with a tiny frontend.
 Stack: Node.js (Express), Vanilla JS UI, JSON file store, Jest tests, Swagger, API-key auth, Rate limiting, Movement audit.
@@ -80,29 +80,7 @@ CORS configurable via env
 
 Not included (kept scope focused): CSV import/export; API pagination/search.
 
-🗂️ Project structure
-ims/
-├─ src/
-│  ├─ server.js                # Express app, docs, security, errors
-│  ├─ routes/products.js       # Endpoints (CRUD, stock, low, movements)
-│  ├─ services/inventory.js    # Business rules (no-negative stock)
-│  ├─ lib/db.js                # JSON file store + movement log
-│  └─ middlewares/
-│     ├─ validate.js           # Zod validation
-│     └─ auth.js               # API-key guard for writes
-├─ public/
-│  ├─ index.html               # Mini UI
-│  ├─ app.js                   # UI logic (sends x-api-key on writes)
-│  └─ styles.css
-├─ data/db.json                # Tiny JSON “database”
-├─ tests/inventory.test.js     # Unit tests for stock logic
-├─ openapi.json                # Swagger spec
-├─ nodemon.json                # Dev reload config
-├─ Dockerfile                  # Production image
-├─ .dockerignore
-└─ package.json
 
-🔐 Authentication (simple & clear)
 
 GET routes are open.
 
