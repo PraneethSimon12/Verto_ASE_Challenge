@@ -1,40 +1,43 @@
 const API = '/api/products';
+const API_KEY = 'dev-secret-key'; // change if you set process.env.API_KEY in server
 
 const tbody = document.querySelector('#productsTable tbody');
-const qInput = document.getElementById('q');
-const sortSel = document.getElementById('sort');
-const orderSel = document.getElementById('order');
-const limitSel = document.getElementById('limit');
-const pageInfo = document.getElementById('pageInfo');
-
 const refreshBtn = document.getElementById('refreshBtn');
 const viewLowBtn = document.getElementById('viewLowBtn');
-const applyFiltersBtn = document.getElementById('applyFiltersBtn');
-const prevPageBtn = document.getElementById('prevPageBtn');
-const nextPageBtn = document.getElementById('nextPageBtn');
 
-let state = {
-  page: 1,
-  limit: 10,
-  q: '',
-  sort: 'id',
-  order: 'asc',
-  totalPages: 1
-};
+function toast(msg) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1500);
+}
 
 async function fetchJSON(url, opts) {
-  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
-  if (!res.ok) throw new Error((await res.json()).error || res.statusText);
-  return res.json();
+  const isWrite = opts && ['POST','PUT','DELETE','PATCH'].includes((opts.method || 'GET').toUpperCase());
+  const headers = { 'Content-Type': 'application/json', ...(opts && opts.headers) };
+  if (isWrite) headers['x-api-key'] = API_KEY;
+
+  const res = await fetch(url, { headers, ...opts });
+  if (!res.ok) {
+    let msg = res.statusText;
+    try { msg = (await res.json()).error || msg; } catch {}
+    throw new Error(msg);
+  }
+  // export CSV returns text; others return json
+  const ctype = res.headers.get('content-type') || '';
+  if (ctype.includes('application/json')) return res.json();
+  return res.text();
 }
 
 function rowHTML(p) {
   const low = p.stock_quantity < p.low_stock_threshold;
+  const badge = low ? '<span class="badge low">Low</span>' : '';
   return `
     <tr class="${low ? 'low' : ''}">
       <td>${p.id}</td>
       <td>
-        <div class="name">${p.name}</div>
+        <div class="name">${p.name} ${badge}</div>
         <div class="desc">${p.description || ''}</div>
       </td>
       <td>${p.stock_quantity}</td>
@@ -51,65 +54,32 @@ function rowHTML(p) {
     </tr>`;
 }
 
-async function loadPage() {
-  // build query string
-  const qs = new URLSearchParams({
-    page: state.page,
-    limit: state.limit,
-    q: state.q,
-    sort: state.sort,
-    order: state.order
-  });
-  const data = await fetchJSON(`${API}?${qs.toString()}`);
-  state.totalPages = data.totalPages || 1;
-  // render rows
-  tbody.innerHTML = (data.items || []).map(rowHTML).join('');
-  pageInfo.textContent = `Page ${data.page} / ${data.totalPages} — ${data.total} total`;
-  // controls
-  prevPageBtn.disabled = state.page <= 1;
-  nextPageBtn.disabled = state.page >= state.totalPages;
+async function loadAll() {
+  const items = await fetchJSON(API);
+  tbody.innerHTML = items.map(rowHTML).join('');
+  await updateStats(items);
 }
 
-// events
-applyFiltersBtn.onclick = () => {
-  state.q = qInput.value.trim();
-  state.sort = sortSel.value;
-  state.order = orderSel.value;
-  state.limit = parseInt(limitSel.value, 10);
-  state.page = 1;
-  loadPage().catch(err => alert(err.message));
-};
+async function loadLow() {
+  const items = await fetchJSON(`${API}/low/threshold`);
+  tbody.innerHTML = items.map(rowHTML).join('');
+  document.getElementById('statsLine')?.textContent = `Low stock: ${items.length} item(s)`;
+}
 
-refreshBtn.onclick = () => {
-  qInput.value = '';
-  sortSel.value = 'id';
-  orderSel.value = 'asc';
-  limitSel.value = '10';
-  state = { page: 1, limit: 10, q: '', sort: 'id', order: 'asc', totalPages: 1 };
-  loadPage().catch(err => alert(err.message));
-};
-
-viewLowBtn.onclick = async () => {
-  const lows = await fetchJSON(`${API}/low/threshold`);
-  tbody.innerHTML = lows.map(rowHTML).join('');
-  pageInfo.textContent = `Low stock: ${lows.length} item(s)`;
-  prevPageBtn.disabled = true;
-  nextPageBtn.disabled = true;
-};
-
-prevPageBtn.onclick = () => {
-  if (state.page > 1) {
-    state.page--;
-    loadPage().catch(err => alert(err.message));
+async function updateStats(maybeItems) {
+  let items = maybeItems;
+  if (!Array.isArray(items)) {
+    items = await fetchJSON(API);
   }
-};
+  const totalProducts = items.length;
+  const totalQty = items.reduce((s, p) => s + (p.stock_quantity || 0), 0);
+  const lowCount = items.filter(p => p.stock_quantity < p.low_stock_threshold).length;
+  const el = document.getElementById('statsLine');
+  if (el) el.textContent = `Products: ${totalProducts} • Total Qty: ${totalQty} • Low stock: ${lowCount}`;
+}
 
-nextPageBtn.onclick = () => {
-  if (state.page < state.totalPages) {
-    state.page++;
-    loadPage().catch(err => alert(err.message));
-  }
-};
+refreshBtn.onclick = loadAll;
+viewLowBtn.onclick = loadLow;
 
 document.addEventListener('click', async (e) => {
   const btn = e.target.closest('button[data-act]');
@@ -123,11 +93,13 @@ document.addEventListener('click', async (e) => {
         method: 'POST',
         body: JSON.stringify({ amount: amt })
       });
-      await loadPage();
+      await loadAll();
+      toast('Updated');
     }
     if (action === 'del') {
       await fetchJSON(`${API}/${id}`, { method: 'DELETE' });
-      await loadPage();
+      await loadAll();
+      toast('Deleted');
     }
     if (action === 'edit') {
       const name = prompt('New name? (leave blank to keep)');
@@ -140,7 +112,8 @@ document.addEventListener('click', async (e) => {
       if (qty) body.stock_quantity = Number(qty);
       if (thr) body.low_stock_threshold = Number(thr);
       await fetchJSON(`${API}/${id}`, { method: 'PUT', body: JSON.stringify(body) });
-      await loadPage();
+      await loadAll();
+      toast('Updated');
     }
   } catch (err) {
     alert(err.message);
@@ -158,11 +131,11 @@ form.addEventListener('submit', async (e) => {
   try {
     await fetchJSON(API, { method: 'POST', body: JSON.stringify(payload) });
     form.reset();
-    state.page = 1; // show newest from first page
-    await loadPage();
+    await loadAll();
+    toast('Created');
   } catch (err) {
     alert(err.message);
   }
 });
 
-loadPage().catch(err => alert(err.message));
+loadAll().catch(err => alert(err.message));
